@@ -8,6 +8,17 @@ job title, role start date (for the newly-hired-leader signal).
 
 All three are official hosted MCP connectors, authenticated via claude.ai Connectors -- call
 them as tools inside a Claude Code session, not as raw HTTP requests. No API keys needed here.
+
+Reaction-row fallback (Stage 0b in classification-qualification.md): Apify's "like" rows carry
+an opaque Sales Navigator URN as linkedinUrl instead of a resolvable public profile URL, so they
+can't go straight into the waterfall below. Resolve those via a Serper (google.serper.dev) search
+first -- requires a SERPER_API_KEY environment variable, not an MCP connector. Query template and
+corroboration rule are specified in Stage 0b; both were validated this session against two real
+engager records: a clean single-candidate resolution (name + company, corroborated by an
+independent source), and a 7-way name-collision case with no employer in the headline, where a
+bare-name search was hopelessly ambiguous but the full Stage 0b query template (name + full
+position text as a second quoted phrase) still resolved to one corroborated candidate. Only the
+resolved public URL should be passed into enrich_contact() below.
 """
 
 

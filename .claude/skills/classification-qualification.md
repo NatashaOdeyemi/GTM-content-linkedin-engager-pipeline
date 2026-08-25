@@ -18,6 +18,30 @@ Before any classification, clean the raw scraped engagement list for a post:
   collapse to a single record using the comment (the stronger signal), not the like — do not
   process them as two separate rows.
 
+## Stage 0b — Reaction URL fallback (Serper resolution)
+
+Apify's reaction ("like") rows return an opaque Sales Navigator-encoded URN as `linkedinUrl`, not
+a resolvable public URL — comment rows are unaffected. For any engager whose `linkedinUrl`
+matches this opaque pattern:
+
+1. Run exactly one Serper query, formatted as two separately quoted phrases with no other text
+   between them: `"{name}" "{position}" linkedin` — for example, `"Diana Melchor" "GTME @
+   OutboundLeads" linkedin`. Do not include literal words like "position =" in the query string;
+   that phrasing is just for describing the data fields, not part of the actual search syntax.
+2. Collect every distinct `linkedin.com/in/` URL in the results.
+3. Require corroboration: only accept a candidate URL if an independent source — a post or
+   mention from someone other than the candidate, not their own profile or their own posts —
+   confirms the same person at the same title/context from the scraped position text.
+4. If exactly one candidate is corroborated, treat that URL as resolved — proceed to Stage 3's
+   normal enrichment waterfall using it as the input, and continue through Stage 4/5 exactly as
+   any comment-derived contact would. Do not pre-filter or exclude based on the raw scraped
+   headline text before this point.
+5. If zero candidates are corroborated, or multiple conflicting candidates each have partial
+   corroboration, exclude with `excluded_reason: "identity unresolvable via search"`.
+6. The exact role-start-date needed for the Newly Hired Sales/RevOps Leader signal (Stage 8) may
+   not be available even after resolution. If unavailable, skip that check and fall through to
+   the next signal.
+
 ## Stage 1 — Post categorization
 
 Read the full post content. Assign **exactly one** category based on the post's central theme
