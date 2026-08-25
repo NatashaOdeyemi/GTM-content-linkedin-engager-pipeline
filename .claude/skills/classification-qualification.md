@@ -6,6 +6,18 @@ Stop and exclude the moment any gate fails — do not run later stages on an exc
 
 ---
 
+## Stage 0 — Raw engagement cleanup
+
+Before any classification, clean the raw scraped engagement list for a post:
+
+- **Exclude the post's own author** from their own engager list — a self-like or self-comment is
+  not an engager.
+- **Exclude engagements from company/organization pages**, not individual profiles — these can't
+  be enriched or qualified as a person and should be dropped entirely.
+- **Collapse duplicate people**: if the same person both liked and commented on the same post,
+  collapse to a single record using the comment (the stronger signal), not the like — do not
+  process them as two separate rows.
+
 ## Stage 1 — Post categorization
 
 Read the full post content. Assign **exactly one** category based on the post's central theme
