@@ -6,6 +6,10 @@ drafts a personalized opener, and delivers the day's qualified contacts to a Goo
 Slack. It runs as two Claude Code Routines: a 10pm WAT run (scrape → qualify → queue) and a 9am
 run (select → deliver).
 
+The 10pm evening (scrape → qualify → queue) routine runs on weekdays only (Mon-Fri). Weekend
+scraping is intentionally disabled — do not schedule or run the evening routine on Saturday or
+Sunday.
+
 Read this file in full before doing any work in this repo. It holds the standing rules that
 apply across every script — the two skill files under `.claude/skills/` hold the detailed,
 situational logic for the classification and copywriting steps specifically.
