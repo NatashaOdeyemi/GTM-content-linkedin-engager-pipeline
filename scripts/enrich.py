@@ -1,13 +1,18 @@
 """
 Stage 3: Enrichment waterfall.
 
-Fixed order for BOTH contact and company enrichment: GetLeads.io -> Icypeas -> Prospeo.
+Fixed order for BOTH contact and company enrichment: HarvestAPI -> Prospeo -> Icypeas.
 Move to the next tool only when the previous one returns no data or is out of credits.
 Needed fields: company name, domain, HQ location, employee count, annual revenue estimate,
 job title, role start date (for the newly-hired-leader signal).
 
-All three are official hosted MCP connectors, authenticated via claude.ai Connectors -- call
-them as tools inside a Claude Code session, not as raw HTTP requests. No API keys needed here.
+Prospeo and Icypeas are official hosted MCP connectors, authenticated via claude.ai Connectors --
+call them as tools inside a Claude Code session, not as raw HTTP requests. HarvestAPI is a raw
+API (harvestapi.io) -- requires a HARVESTAPI_KEY environment variable, not an MCP connector, and
+is unrelated to the harvestapi Apify actor used for scraping in Stage 1.
+
+GetLeads.io has been removed from the waterfall entirely (not temporarily skipped) -- its former
+implementation is commented out below rather than deleted, so it's still visible in history.
 
 Reaction-row fallback (Stage 0b in classification-qualification.md): Apify's "like" rows carry
 an opaque Sales Navigator URN as linkedinUrl instead of a resolvable public profile URL, so they
@@ -22,10 +27,23 @@ resolved public URL should be passed into enrich_contact() below.
 """
 
 
-def enrich_via_getleads(linkedin_url: str) -> dict | None:
+# Removed from the waterfall entirely (superseded by HarvestAPI, not a temporary skip) --
+# left commented out rather than deleted so the prior implementation stays visible in history.
+#
+# def enrich_via_getleads(linkedin_url: str) -> dict | None:
+#     """
+#     TODO: call the GetLeads.io MCP tool(s) for contact + company enrichment.
+#     Return None (not an error) if no match is found, so the waterfall can continue.
+#     """
+#     raise NotImplementedError
+
+
+def enrich_via_harvestapi(linkedin_url: str) -> dict | None:
     """
-    TODO: call the GetLeads.io MCP tool(s) for contact + company enrichment.
-    Return None (not an error) if no match is found, so the waterfall can continue.
+    TODO: call harvestapi.io's own API (raw HTTP, HARVESTAPI_KEY env var -- not an MCP
+    connector, and not the harvestapi Apify actor used for scraping in Stage 1) for contact +
+    company enrichment. Return None (not an error) if no match is found, so the waterfall can
+    continue.
     """
     raise NotImplementedError
 
@@ -39,7 +57,7 @@ def enrich_via_icypeas(linkedin_url: str) -> dict | None:
       - bulk-profile-scraper / bulk-company-scraper -> same, batched (use these once records
         are processed in batches rather than one at a time, to cut down tool-call volume)
     Revenue is not reliably on a LinkedIn company page -- if company-scraper doesn't return it,
-    that's expected; GetLeads.io/Prospeo higher in the waterfall are the more likely source.
+    that's expected; HarvestAPI/Prospeo higher in the waterfall are the more likely source.
 
     TODO: call profile-scraper for contact data. If a company LinkedIn URL isn't already known,
     call company-search first, then company-scraper. Return None if no match is found.
@@ -58,9 +76,9 @@ def enrich_via_prospeo(linkedin_url: str) -> dict | None:
 def enrich_contact(linkedin_url: str) -> dict | None:
     """Runs the fixed waterfall in order, returns the first successful result plus its source."""
     for source_name, fn in [
-        ("GetLeads.io", enrich_via_getleads),
-        ("Icypeas", enrich_via_icypeas),
+        ("HarvestAPI", enrich_via_harvestapi),
         ("Prospeo", enrich_via_prospeo),
+        ("Icypeas", enrich_via_icypeas),
     ]:
         result = fn(linkedin_url)
         if result:

@@ -21,11 +21,11 @@ situational logic for the classification and copywriting steps specifically.
    last 24h, up to 100 reactions and 100 comments per post (comments filtered to the last week).
 2. **Classify + extract topic** — see `.claude/skills/classification-qualification.md`, Stages 1-2.
    Posts that don't fit one of the 5 categories are excluded entirely; do not scrape their engagers.
-3. **Enrich** — waterfall order is fixed: **GetLeads.io → Icypeas → Prospeo**, for both contact
+3. **Enrich** — waterfall order is fixed: **HarvestAPI → Prospeo → Icypeas**, for both contact
    and company data. Never skip a tool in the sequence, and never reorder it. If all three return
    no company match, the record fails ICP fit — do not proceed further with it.
-   All four are official hosted MCP connectors (GetLeads.io, lemlist, Icypeas, Prospeo) — call
-   them as tools, not raw HTTP requests.
+   Prospeo, Icypeas, and lemlist are official hosted MCP connectors — call them as tools, not raw
+   HTTP requests. HarvestAPI is a raw API (see Credentials below), not an MCP connector.
 4. **Qualify** — company fit, then contact fit (see skill file, Stages 4-5). Both gates are
    pass/fail; either one failing excludes the record from all further stages.
 5. **Dedup + campaign check** — exclude anyone already captured on any previous day, and exclude
@@ -66,10 +66,16 @@ source of truth for who's already been contacted.
 
 ## Credentials
 
-Apify, Icypeas, Prospeo, PredictLeads, GetLeads.io, and lemlist are all official hosted MCP
-connectors, authenticated once via claude.ai's Connectors settings — call them as tools, not raw
-HTTP requests, inside any Claude Code session or routine. No API keys are stored in this repo or
-its environment variables; the routine's Connectors section is where each one gets included.
+Apify, Icypeas, Prospeo, PredictLeads, and lemlist are all official hosted MCP connectors,
+authenticated once via claude.ai's Connectors settings — call them as tools, not raw HTTP
+requests, inside any Claude Code session or routine. No API keys are stored in this repo or its
+environment variables for these; the routine's Connectors section is where each one gets included.
+
+HarvestAPI and Serper are both raw API keys, not MCP connectors — they're read from
+`HARVESTAPI_KEY` and `SERPER_API_KEY` environment variables respectively, unlike the true
+MCP-connected tools above. HarvestAPI (harvestapi.io) is Stage 3's first enrichment waterfall
+tool; Serper is the Stage 0b reaction-URL resolution fallback. Neither is GetLeads.io, which has
+been removed from the waterfall entirely.
 
 ## Full spec
 

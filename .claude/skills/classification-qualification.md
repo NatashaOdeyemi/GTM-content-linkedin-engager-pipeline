@@ -41,6 +41,9 @@ matches this opaque pattern:
 6. The exact role-start-date needed for the Newly Hired Sales/RevOps Leader signal (Stage 8) may
    not be available even after resolution. If unavailable, skip that check and fall through to
    the next signal.
+7. The Serper-resolved LinkedIn URL becomes this contact's canonical `linkedin_url` for every
+   subsequent stage — enrichment, qualification, copywriting, and final delivery output. Never
+   use the original opaque URL again once resolution succeeds.
 
 ## Stage 1 — Post categorization
 
@@ -57,6 +60,28 @@ Read the full post content. Assign **exactly one** category based on the post's 
   true hyper-personalization (too slow to do at volume).
 - **Tool-Stack Inefficiency** — tools that don't work well, go stale, create more work than they
   save, or don't integrate cleanly.
+- **Outbound System Health** — the post centers on outbound campaigns underperforming, where the
+  root cause is diagnosed as infrastructure, deliverability, or cadence — as opposed to a lack of
+  personalization, admin burden, or tool integration. When infrastructure isn't dialed in, even
+  good copy and good targeting underperform, so fixing it usually unlocks everything else already
+  built.
+  - vs. Personalization at Scale: if the fix is "write better/more personalized messages," it's
+    Personalization at Scale. If the fix is "check infrastructure/deliverability/cadence before
+    touching copy," it's Outbound System Health.
+  - vs. Tool-Stack Inefficiency: if the post's central complaint is that tools are breaking,
+    going stale, or not integrating with each other, that belongs to Tool-Stack Inefficiency — a
+    tool being merely mentioned doesn't move a post into Outbound System Health. This category is
+    reserved for posts about diagnostic methodology or system health itself, not tool breakdowns.
+- **Lead Lifecycle Management** — the post centers on leads or prospects not being scored,
+  qualified, or routed consistently once they exist — whether they arrived via an inbound signal,
+  a reply, or a list you proactively built — causing reps to guess which ones are worth their
+  time while the best ones lose momentum before anyone acts.
+  - vs. Missed Intent Signals: that category is about a buying/intent signal — a trigger event —
+    going unnoticed before any lead exists. Lead Lifecycle Management is about a lead already
+    identified, but not scored/qualified/routed consistently after the fact.
+  - vs. Rep Productivity: if the complaint is the time/effort of manually researching or building
+    the list, that's Rep Productivity. If the complaint is what happens once people are already
+    in the list — scoring, qualifying, routing — that's Lead Lifecycle Management.
 
 If the post fits none of these, **exclude the post entirely** — do not scrape its engagers, do
 not proceed to any later stage.
@@ -79,7 +104,7 @@ If category is None/Unclear, still produce a best-effort topic phrase — never 
 Enrich the contact and their company in this fixed tool order. Move to the next tool only when
 the previous one has no data or is out of credits — never skip a tool in the sequence.
 
-**Order: GetLeads.io → Icypeas → Prospeo** (same order for both contact and company enrichment).
+**Order: HarvestAPI → Prospeo → Icypeas** (same order for both contact and company enrichment).
 
 Needed fields: company name, domain, HQ location, employee count, annual revenue estimate,
 contact's job title, role start date (for the newly-hired-leader signal in Stage 6).
@@ -217,6 +242,8 @@ Then set `follow_up_insight` by exact lookup:
 | GTM data/CRM quality | when contact and account data goes stale or fragmented, it quietly breaks targeting, routing, and reporting before anyone notices |
 | personalization at scale | manual research and writing can't keep pace once volume goes up, so reply rates usually drop right when you need them to hold |
 | tool-stack inefficiency | when tools don't talk to each other cleanly, teams end up paying for overlapping systems while still doing the connecting work by hand |
+| outbound system health | when outbound infrastructure, deliverability, or cadence isn't dialed in, even good copy and good targeting underperform, so fixing it usually unlocks everything else already built |
+| lead lifecycle management | when leads aren't scored, qualified, and routed consistently, reps end up guessing which ones are worth their time while the best ones lose momentum before anyone acts on them |
 
 ## Edge cases (explicit)
 
@@ -246,8 +273,8 @@ Then set `follow_up_insight` by exact lookup:
   "process_1": "" | null,
   "process_2": "" | null,
   "process_3": "" | null,
-  "enrichment_source_contact": "GetLeads.io | Icypeas | Prospeo",
-  "enrichment_source_company": "GetLeads.io | Icypeas | Prospeo"
+  "enrichment_source_contact": "HarvestAPI | Prospeo | Icypeas",
+  "enrichment_source_company": "HarvestAPI | Prospeo | Icypeas"
 }
 ```
 

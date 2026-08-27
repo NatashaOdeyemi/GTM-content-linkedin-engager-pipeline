@@ -37,6 +37,11 @@ language, don't copy the pattern text itself):
 - personalization at scale: stage 1 = research/prep per account; stage 2 = the writing at volume
 - tool-stack inefficiency: stage 1 = getting tools connected; stage 2 = keeping them working
   together day to day
+- outbound system health: stage 1 = diagnosing what's actually broken (deliverability, list
+  health, infrastructure, cadence) before touching copy; stage 2 = monitoring/maintaining system
+  health afterward so it doesn't silently degrade again
+- lead lifecycle management: stage 1 = scoring/qualifying leads consistently as they come in;
+  stage 2 = routing and acting on them before momentum is lost
 
 Each option: under 8 words (excluding any grammatical prefix the branch supplies), specific
 enough that the reader recognizes their own situation.
@@ -74,6 +79,12 @@ sales rep's workload but not a media buyer's, even under the same problem_area l
 - personalization at scale → volume: manual effort has a ceiling that outbound volume exceeds
 - tool-stack inefficiency → redundant cost: disconnected tools mean paying twice (for the tools,
   and for the manual work of connecting them)
+- outbound system health → foundation-first: infrastructure problems silently cap the ceiling on
+  everything built on top of it, so fixing the foundation unlocks gains from work already done,
+  not just future work
+- lead lifecycle management → decay through inconsistency: without a consistent scoring/routing
+  process, good and bad leads get treated the same, so the good ones lose their window while
+  attention gets spent unevenly
 
 Apply the mechanism to the actual row content, hedged ("usually"/"often"/"tends to"), one clause,
 8-18 words, capitalized (it opens a sentence after a period).
