@@ -10,16 +10,10 @@ step-by-step logic for classification/qualification and copywriting lives in
 
 ## Status
 
-This repo is a scaffold. The scripts under `scripts/` are stubs with `TODO`s and function
-signatures -- the pipeline logic (what to do, in what order, with which rules) is fully specified
-in `CLAUDE.md` and the two skill files, but the actual tool-calling code still needs writing:
-
-- [ ] `scripts/scrape.py` -- Apify MCP calls (start run, poll status, fetch dataset)
-- [ ] `scripts/enrich.py` -- HarvestAPI (raw API), Prospeo + Icypeas (MCP) calls
-- [ ] `scripts/signals.py` -- PredictLeads MCP calls
-- [ ] `scripts/qualify.py` -- lemlist MCP calls, dedup store, orchestration
-- [ ] `scripts/copywrite.py` -- orchestration only, logic lives in the skill file
-- [ ] `scripts/deliver.py` -- Google Sheets write, Slack post, persistent sent-count store
+The pipeline runs entirely through `.claude/skills/orchestrator.md`, which calls the Apify,
+HarvestAPI/Prospeo/Icypeas, PredictLeads, lemlist, Google Sheets, and Slack tools directly --
+there are no standalone scripts. It's triggered on-demand in a Claude Code session, not on a
+schedule.
 
 ## Setup
 
@@ -48,10 +42,3 @@ in `CLAUDE.md` and the two skill files, but the actual tool-calling code still n
    through Anthropic's servers so the five connectors above don't need this, but HarvestAPI and
    Serper are raw HTTP calls and may need their domains added depending on the routine's network
    policy.
-
-## Local development
-
-```
-pip install -r requirements.txt
-cp .env.example .env   # fill in real keys, never commit .env
-```
