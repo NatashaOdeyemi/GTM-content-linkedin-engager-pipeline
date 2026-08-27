@@ -24,6 +24,13 @@ situational logic for the classification and copywriting steps specifically.
 3. **Enrich** — waterfall order is fixed: **HarvestAPI → Prospeo → Icypeas**, for both contact
    and company data. Never skip a tool in the sequence, and never reorder it. If all three return
    no company match, the record fails ICP fit — do not proceed further with it.
+   The first HarvestAPI call's query param depends on the input: a normal, resolvable
+   `linkedinUrl` (all comments, and any already-resolved reaction) uses the `url` param; an
+   opaque Sales Navigator-style reaction URN (`/in/ACoAA...`) uses the `profileId` param with the
+   raw ID extracted from the URN — HarvestAPI resolves the person directly from that. If the
+   `profileId` lookup fails or finds no match, fall back to Serper search + corroboration as a
+   safety net (see skill file, Stage 3) rather than the primary method. Either way HarvestAPI
+   stays the first waterfall tool — this is a parameter choice, not an extra step.
    Prospeo, Icypeas, and lemlist are official hosted MCP connectors — call them as tools, not raw
    HTTP requests. HarvestAPI is a raw API (see Credentials below), not an MCP connector.
 4. **Qualify** — company fit, then contact fit (see skill file, Stages 4-5). Both gates are
@@ -74,7 +81,8 @@ environment variables for these; the routine's Connectors section is where each 
 HarvestAPI and Serper are both raw API keys, not MCP connectors — they're read from
 `HARVESTAPI_KEY` and `SERPER_API_KEY` environment variables respectively, unlike the true
 MCP-connected tools above. HarvestAPI (harvestapi.io) is Stage 3's first enrichment waterfall
-tool; Serper is the Stage 0b reaction-URL resolution fallback. Neither is GetLeads.io, which has
+tool; Serper is Stage 3's fallback for reaction-URL identity resolution, used only when
+HarvestAPI's own `profileId` lookup fails or finds no match. Neither is GetLeads.io, which has
 been removed from the waterfall entirely.
 
 ## Full spec

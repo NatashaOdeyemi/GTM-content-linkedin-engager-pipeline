@@ -18,33 +18,6 @@ Before any classification, clean the raw scraped engagement list for a post:
   collapse to a single record using the comment (the stronger signal), not the like — do not
   process them as two separate rows.
 
-## Stage 0b — Reaction URL fallback (Serper resolution)
-
-Apify's reaction ("like") rows return an opaque Sales Navigator-encoded URN as `linkedinUrl`, not
-a resolvable public URL — comment rows are unaffected. For any engager whose `linkedinUrl`
-matches this opaque pattern:
-
-1. Run exactly one Serper query, formatted as two separately quoted phrases with no other text
-   between them: `"{name}" "{position}" linkedin` — for example, `"Diana Melchor" "GTME @
-   OutboundLeads" linkedin`. Do not include literal words like "position =" in the query string;
-   that phrasing is just for describing the data fields, not part of the actual search syntax.
-2. Collect every distinct `linkedin.com/in/` URL in the results.
-3. Require corroboration: only accept a candidate URL if an independent source — a post or
-   mention from someone other than the candidate, not their own profile or their own posts —
-   confirms the same person at the same title/context from the scraped position text.
-4. If exactly one candidate is corroborated, treat that URL as resolved — proceed to Stage 3's
-   normal enrichment waterfall using it as the input, and continue through Stage 4/5 exactly as
-   any comment-derived contact would. Do not pre-filter or exclude based on the raw scraped
-   headline text before this point.
-5. If zero candidates are corroborated, or multiple conflicting candidates each have partial
-   corroboration, exclude with `excluded_reason: "identity unresolvable via search"`.
-6. The exact role-start-date needed for the Newly Hired Sales/RevOps Leader signal (Stage 8) may
-   not be available even after resolution. If unavailable, skip that check and fall through to
-   the next signal.
-7. The Serper-resolved LinkedIn URL becomes this contact's canonical `linkedin_url` for every
-   subsequent stage — enrichment, qualification, copywriting, and final delivery output. Never
-   use the original opaque URL again once resolution succeeds.
-
 ## Stage 1 — Post categorization
 
 Read the full post content. Assign **exactly one** category based on the post's central theme
@@ -105,6 +78,45 @@ Enrich the contact and their company in this fixed tool order. Move to the next 
 the previous one has no data or is out of credits — never skip a tool in the sequence.
 
 **Order: HarvestAPI → Prospeo → Icypeas** (same order for both contact and company enrichment).
+
+**Resolving the contact's identity before the first HarvestAPI call:** Apify's reaction ("like")
+rows return an opaque Sales Navigator-encoded URN as `linkedinUrl` (pattern: `/in/ACoAA...`), not
+a resolvable public URL — comment rows are unaffected and already carry a normal, resolvable URL.
+Check the pattern before calling HarvestAPI:
+
+- **Normal, resolvable URL** (all comments, and any already-resolved reaction): call HarvestAPI's
+  `/linkedin/profile` endpoint using the `url` query param. This is the first waterfall call.
+- **Opaque URN** (reactions only): extract the raw ID — everything after `/in/` — and call the
+  same `/linkedin/profile` endpoint using the `profileId` query param instead of `url`. This
+  resolves the person directly; confirmed working in testing (Diana Melchor and Aman V. both
+  resolved correctly this way, matching independently-verified data). HarvestAPI is still the
+  first waterfall tool either way — this isn't an extra step, just the right parameter for the
+  input type.
+- **If the HarvestAPI `profileId` lookup succeeds**, continue the waterfall normally from
+  there — fall through to Prospeo → Icypeas only if HarvestAPI itself has no match or
+  insufficient data, same as any other contact.
+- **If the HarvestAPI `profileId` lookup fails or returns no match** for an opaque-URN contact,
+  fall back to Serper search + corroboration as a safety net, not the primary method:
+  1. Run exactly one Serper query, formatted as two separately quoted phrases with no other text
+     between them: `"{name}" "{position}" linkedin` — for example, `"Diana Melchor" "GTME @
+     OutboundLeads" linkedin`. Do not include literal words like "position =" in the query
+     string; that phrasing is just for describing the data fields, not part of the actual search
+     syntax.
+  2. Collect every distinct `linkedin.com/in/` URL in the results.
+  3. Require corroboration: only accept a candidate URL if an independent source — a post or
+     mention from someone other than the candidate, not their own profile or their own posts —
+     confirms the same person at the same title/context from the scraped position text.
+  4. If exactly one candidate is corroborated, treat that URL as resolved and continue the
+     waterfall (Prospeo → Icypeas) using it as the input.
+  5. If zero candidates are corroborated, or multiple conflicting candidates each have partial
+     corroboration, exclude with `excluded_reason: "identity unresolvable"`.
+- **Whichever method resolves the person** — the HarvestAPI `profileId` lookup or the Serper
+  fallback — their real `linkedinUrl`/`publicIdentifier` from that response becomes canonical for
+  every subsequent stage: enrichment, qualification, copywriting, and final delivery output.
+  Never use the original opaque URL again once resolution succeeds.
+- The exact role-start-date needed for the Newly Hired Sales/RevOps Leader signal (Stage 8) may
+  not be available even after resolution. If unavailable, skip that check and fall through to the
+  next signal.
 
 Needed fields: company name, domain, HQ location, employee count, annual revenue estimate,
 contact's job title, role start date (for the newly-hired-leader signal in Stage 6).
