@@ -1,0 +1,50 @@
+LinkedIn Engager Pipeline — Orchestrator
+This is the entry point for running the LinkedIn engager pipeline on demand. It recognizes when the person wants a run, executes the full pipeline by delegating to the two detail skills, and delivers results to Google Sheets and Slack. This replaces the old automated Routine — there is no schedule; this only runs when explicitly invoked.
+When to trigger
+Recognize natural-language requests to run this pipeline, not just an exact phrase. Examples: "pull today's engagers," "run the LinkedIn pipeline," "get today's qualified contacts," "who engaged with our posts today." If the request is ambiguous whether it means this pipeline versus something else, ask rather than assume.
+Configuration (fill in once, reuse every run)
+
+* Google Sheet ID: `1Hxmr6Bnql4nAr1VQBsu0Fpu8jGCFe3yJDqS671Wm8BQ`
+* Slack delivery channel ID: `C0BU100BT96`
+* Tracked profiles: `config/tracked_profiles.json`
+
+Run steps
+1. Determine scope
+Default scope is all profiles in `config/tracked_profiles.json`, most recent post per profile, last 24h window — same scope the old automated Routine used. If the person's request narrows this (e.g. "just my post," "just [name]'s post"), scope to that instead and say so back to them.
+2. Scrape
+Call the Apify actor (`harvestapi/linkedin-profile-posts`) per the config in `CLAUDE.md`: 1 post per profile, posted limit 24h, reactions on (max 100), comments on (max 100, filtered to last week).
+3. Clean and classify
+Run Stage 0 (self-likes, company-page engagers, like+comment collapse), Stage 0b (Serper resolution for reaction rows with an opaque URL), then Stages 1-9 exactly as specified in `.claude/skills/classification-qualification.md`. This covers categorization, topic extraction, the HarvestAPI → Prospeo → Icypeas enrichment waterfall, company/contact fit, dedup, comment substantivity, signal detection, and problem-area mapping.
+Dedup check: before processing a person, check the `_dedup_log` tab in the Google Sheet for their LinkedIn URL (the canonical, Serper-resolved one where applicable — see Stage 0b's final rule). Skip anyone already present, regardless of how many times this skill has been invoked before, today or on any prior day.
+4. Generate copy
+For every contact that passes all qualification gates, generate their opener using `.claude/skills/copywriting.md`.
+5. Compute today's volume numbers
+Read `_daily_counts` for yesterday's date. Compute:
+
+```
+overshoot = max(0, sent_yesterday - 100)
+target_today = max(0, 100 - overshoot)
+```
+
+This tracks by calendar day, not by invocation — if this skill runs multiple times in one day, all runs that day share the same target number, and the count accumulates across runs before being compared to yesterday's figure at the start of the next calendar day.
+Send every qualified contact found — the target is informational only, never a cap (see `CLAUDE.md` for the full rule and the Slack-notification wording when target hits 0).
+6. Write to the Sheet
+
+* Append each new qualified contact as a row in the `Contacts` tab (all 33 columns per the header row already in place).
+* Append each newly-contacted LinkedIn URL, name, today's date, and outreach signal to `_dedup_log`.
+* Append today's date, the count actually sent this run, target_today, and the overshoot value used, to `_daily_counts`. If this skill runs more than once on the same calendar day, add a new row per run rather than overwriting — the total for the day is the sum of that day's rows.
+
+7. Deliver to Slack
+Two separate actions, both required:
+a. Summary message (via the Slack MCP connector, `slack_send_message`): post to the configured channel ID. Include: count of contacts found this run, running total for today if this isn't the first run today, target_today, a direct link to the Google Sheet, and — if target_today is 0 — the required note explaining the overshoot per `CLAUDE.md`.
+b. CSV file upload (via the raw Slack Bot Token API, `SLACK_BOT_TOKEN` env var — NOT the MCP connector, which cannot upload files): build a CSV of this run's new contacts, then:
+
+1. `files.getUploadURLExternal` — request an upload URL for the CSV
+2. `PUT` the CSV bytes to that URL
+3. `files.completeUploadExternal` — complete the upload, sharing it to the configured channel ID
+
+Note the upload is asynchronous — the file may take a moment to actually appear in the channel after step 3 returns success; this is expected, not an error.
+8. Confirm back to the person
+In the chat where this skill was invoked, give a short summary: how many contacts were found and qualified, how many were excluded and why (grouped by reason, not one-by-one), confirmation that the Sheet and Slack message went out, and today's running total against the 100/day target.
+Error handling
+If any paid connector call fails outright (not just "no match" — an actual error), stop and tell the person what failed and at which contact, rather than silently skipping and continuing. This mirrors how testing was done throughout this project — always surface real failures for a decision, never guess past them.
