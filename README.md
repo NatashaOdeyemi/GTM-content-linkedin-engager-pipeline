@@ -20,11 +20,14 @@ schedule.
 1. Push this repo to GitHub. (done)
 2. Connect Claude Code to GitHub and open a session on this repo.
 3. Connect all MCP tools as Remote connectors at claude.ai Settings > Connectors: Apify,
-   GetLeads.io, Icypeas, Prospeo, PredictLeads, lemlist, and Slack. Note GetLeads.io is
-   connected but no longer used in the active enrichment waterfall (see `CLAUDE.md`).
+   GetLeads.io, Icypeas, Prospeo, PredictLeads, lemlist, Slack, and Google Drive. Note
+   GetLeads.io is connected but no longer used in the active enrichment waterfall (see
+   `CLAUDE.md`). Google Drive is used to deliver the daily CSV export (see
+   `.claude/skills/orchestrator.md` Step 7) -- Slack's own file upload doesn't work for this app.
 4. Set `HARVESTAPI_KEY`, `SERPER_API_KEY`, and `SLACK_BOT_TOKEN` as environment variables in
    the Claude Code cloud environment -- not committed to the repo. These three are raw API
-   keys, not MCP connectors (see `.env.example` for local dev).
+   keys, not MCP connectors (see `.env.example` for local dev). `SLACK_BOT_TOKEN` only needs
+   `chat:write` and `channels:read` scopes -- `files:write` is not used.
 5. Confirm the Google Sheet (ID in `.claude/skills/orchestrator.md`) and Slack channel are
    set up.
 6. To run the pipeline: open a Claude Code session on this repo and ask in natural language,

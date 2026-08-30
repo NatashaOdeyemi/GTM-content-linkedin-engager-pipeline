@@ -85,6 +85,15 @@ tool; Serper is Stage 3's fallback for reaction-URL identity resolution, used on
 HarvestAPI's own `profileId` lookup fails or finds no match. Neither is GetLeads.io, which has
 been removed from the waterfall entirely.
 
+`SLACK_BOT_TOKEN` only needs the `chat:write` and `channels:read` OAuth scopes. `files:write` is
+no longer needed anywhere in this pipeline — Slack's native file upload/sharing
+(`files.getUploadURLExternal` / PUT / `files.completeUploadExternal`) is confirmed broken for
+this app/token (upload succeeds, channel share silently no-ops) and is no longer used. The daily
+CSV is delivered via Google Drive instead — the Google Drive connector needs to be added
+alongside the others under the routine's Connectors section — with the resulting link posted to
+Slack as plain text via `chat.postMessage`; see `.claude/skills/orchestrator.md` Step 7 for the
+exact flow.
+
 ## Full spec
 
 The original, fully worked specification (including every rule, worked example, and edge case)

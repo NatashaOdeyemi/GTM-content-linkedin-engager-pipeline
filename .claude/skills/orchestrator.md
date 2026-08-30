@@ -7,6 +7,7 @@ Configuration (fill in once, reuse every run)
 * Google Sheet ID: `1Hxmr6Bnql4nAr1VQBsu0Fpu8jGCFe3yJDqS671Wm8BQ`
 * Slack delivery channel ID: `C0BU100BT96`
 * Tracked profiles: `config/tracked_profiles.json`
+* Drive folder for daily CSV exports: `LinkedIn Engager Pipeline - Daily CSVs`, ID `1zc8otjzMCvaUdcKsQIi1ZAknxP1Sh5ue`
 
 Run steps
 1. Determine scope
@@ -35,15 +36,17 @@ Send every qualified contact found — the target is informational only, never a
 * Append today's date, the count actually sent this run, target_today, and the overshoot value used, to `_daily_counts`. If this skill runs more than once on the same calendar day, add a new row per run rather than overwriting — the total for the day is the sum of that day's rows.
 
 7. Deliver to Slack
-Two separate actions, both required:
-a. Summary message (via the Slack MCP connector, `slack_send_message`): post to the configured channel ID. Include: count of contacts found this run, running total for today if this isn't the first run today, target_today, a direct link to the Google Sheet, and — if target_today is 0 — the required note explaining the overshoot per `CLAUDE.md`.
-b. CSV file upload (via the raw Slack Bot Token API, `SLACK_BOT_TOKEN` env var — NOT the MCP connector, which cannot upload files): build a CSV of this run's new contacts, then:
+Two things, both required, delivered as one or two Slack messages:
+a. Summary message (via the Slack MCP connector, `slack_send_message`, or the raw Bot Token API's `chat.postMessage` — either works, see note below): post to the configured channel ID. Include: count of contacts found this run, running total for today if this isn't the first run today, target_today, a direct link to the Google Sheet, and — if target_today is 0 — the required note explaining the overshoot per `CLAUDE.md`.
+b. CSV delivery via Google Drive (NOT Slack file upload — Slack's native file-sharing is confirmed broken for this app/token: `files.completeUploadExternal` returns `ok: true` but silently never attaches the file to a channel, reproduced across 5 separate attempts with different parameter shapes and OAuth scopes; do not use `files.getUploadURLExternal` / PUT / `files.completeUploadExternal` for this — that whole mechanism is retired from this pipeline). Instead:
 
-1. `files.getUploadURLExternal` — request an upload URL for the CSV
-2. `PUT` the CSV bytes to that URL
-3. `files.completeUploadExternal` — complete the upload, sharing it to the configured channel ID
+1. Build a CSV of this run's new contacts.
+2. Upload it to the Drive folder above (`create_file`, `parentId` = the folder ID, `contentMimeType: text/csv`, `disableConversionToGoogleType: true` so it stays a real .csv rather than converting to a Google Sheet).
+3. Call `share_file` on the uploaded file with `emailAddress: natasha@tashavirtually.com`, `role: reader`.
+4. Verify the share actually took effect by calling `get_file_permissions` on the file afterward — don't assume success from the `share_file` response alone. Note: because the Drive connector is itself authenticated as `natasha@tashavirtually.com`, she already owns every file it creates, so this share call is typically a no-op (permissions will still show only the `owner` entry) — that's expected, not a failure, and the file is already fully accessible to her regardless. The verification step still matters for the day this pipeline shares with someone else's account, where a real `reader` permission should actually appear.
+5. Get the file's `viewUrl` from the `create_file` (or `get_file_metadata`) response and post it via `chat.postMessage` to the configured channel — combine it with the summary message from step (a), or send as an immediate follow-up.
 
-Note the upload is asynchronous — the file may take a moment to actually appear in the channel after step 3 returns success; this is expected, not an error.
+This intentionally shares to a specific known Google account rather than a public "anyone with the link" link — the Drive connector available to this pipeline has no `type: anyone` / public-link sharing option at all (confirmed: `share_file`'s schema only accepts a specific `emailAddress`, and passing `"anyone"` there is rejected outright as an invalid argument). Restricting to named accounts is also simply the right call here regardless, since this file contains prospect PII.
 8. Confirm back to the person
 In the chat where this skill was invoked, give a short summary: how many contacts were found and qualified, how many were excluded and why (grouped by reason, not one-by-one), confirmation that the Sheet and Slack message went out, and today's running total against the 100/day target.
 Error handling
