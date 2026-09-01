@@ -15,7 +15,8 @@ Default scope is all profiles in `config/tracked_profiles.json`, most recent pos
 2. Scrape
 Call the Apify actor (`harvestapi/linkedin-profile-posts`) per the config in `CLAUDE.md`: 1 post per profile, posted limit 24h, reactions on (max 100), comments on (max 100, filtered to last week).
 3. Clean and classify
-Run Stage 0 (self-likes, company-page engagers, like+comment collapse), then Stages 1-9 exactly as specified in `.claude/skills/classification-qualification.md`. This covers categorization, topic extraction, the HarvestAPI → Prospeo → Icypeas enrichment waterfall (including Stage 3's identity resolution for opaque reaction URNs via HarvestAPI's `profileId` param, with Serper as a fallback), company/contact fit, dedup, comment substantivity, signal detection, and problem-area mapping.
+Run Stage 0 (self-likes, company-page engagers, tracked-profile engagers, like+comment collapse),
+then Stages 1-9 exactly as specified in `.claude/skills/classification-qualification.md`. This covers categorization, topic extraction, the HarvestAPI → Prospeo → Icypeas enrichment waterfall (including Stage 3's identity resolution for opaque reaction URNs via HarvestAPI's `profileId` param, with Serper as a fallback), company/contact fit, dedup, comment substantivity, signal detection, and problem-area mapping.
 Dedup check: before processing a person, check the `_dedup_log` tab in the Google Sheet for their LinkedIn URL (the canonical one resolved in Stage 3, whichever method — HarvestAPI or the Serper fallback — actually resolved it). Skip anyone already present, regardless of how many times this skill has been invoked before, today or on any prior day.
 4. Generate copy
 For every contact that passes all qualification gates, generate their opener using `.claude/skills/copywriting.md`.

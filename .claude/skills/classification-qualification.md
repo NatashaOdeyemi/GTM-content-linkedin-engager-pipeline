@@ -14,6 +14,10 @@ Before any classification, clean the raw scraped engagement list for a post:
   not an engager.
 - **Exclude engagements from company/organization pages**, not individual profiles — these can't
   be enriched or qualified as a person and should be dropped entirely.
+- **Exclude engagers who are themselves one of the tracked profiles** in
+  `config/tracked_profiles.json`, even when they're engaging on a different tracked profile's
+  post (not just their own). They're part of the monitored network, not an outreach prospect —
+  drop them entirely rather than enriching or qualifying them.
 - **Collapse duplicate people**: if the same person both liked and commented on the same post,
   collapse to a single record using the comment (the stronger signal), not the like — do not
   process them as two separate rows.
