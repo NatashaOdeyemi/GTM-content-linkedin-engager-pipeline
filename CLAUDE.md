@@ -85,6 +85,9 @@ tool; Serper is Stage 3's fallback for reaction-URL identity resolution, used on
 HarvestAPI's own `profileId` lookup fails or finds no match. Neither is GetLeads.io, which has
 been removed from the waterfall entirely.
 
+HarvestAPI base URL: https://api.harvestapi.io (confirmed working; do not guess at .com or
+other variants).
+
 `SLACK_BOT_TOKEN` only needs the `chat:write` and `channels:read` OAuth scopes. `files:write` is
 no longer needed anywhere in this pipeline — Slack's native file upload/sharing
 (`files.getUploadURLExternal` / PUT / `files.completeUploadExternal`) is confirmed broken for
