@@ -135,7 +135,14 @@ All of the following must be true:
 - Greater than 2 employees
 - Headquartered in Europe, the US, or Canada
 - Has at least 1 salesperson (may require enriching additional contacts at the company)
-- Minimum $1M ARR
+- **Minimum $1M ARR** — check the annual revenue range field from HarvestAPI's company
+  enrichment. If that field isn't present (HarvestAPI's `/linkedin/company` response commonly has
+  no revenue data at all — confirmed empty across every company enrichment in production use so
+  far, not just occasional gaps), do **not** exclude the company on ARR grounds alone. Company
+  age, employee count, or follower count are not substitutes for a real revenue figure and must
+  never be used to fail this gate — they're too unreliable (a young, small-headcount, low-follower
+  company can still be past $1M ARR, and vice versa). Only exclude here when an actual revenue
+  figure or range is available and it's under $1M.
 - B2B
 - **Not a GTM company** — flag "Yes" (exclude) when the site describes the company as primarily
   delivering *done-for-you* go-to-market services rather than self-serve software: outbound-as-
